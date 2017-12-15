@@ -14,7 +14,7 @@ import pickle
 #img_nonface = []
 
 sampleSize = 400
-maxIteration = 100
+maxIteration = 10
 
 img =[]
 img_label = []
@@ -76,32 +76,62 @@ if __name__ == "__main__":
     img_features_validation = img_features[int(sampleSize*0.7):]
     
     weights = np.ones(len(img_features_train)) / len(img_features_train)
+#    print(weights.shape)
+#    print(weights)
     clf_tree = DecisionTreeClassifier(max_depth = 1, random_state = 1)
 
 #    print(get_accuracy(clf_tree.predict(img_features_train),img_label_train))
 
     
-    pred_train = np.zeros(len(img_features_train))
+#    prediction = np.zeros(len(img_features_train))
+    hypothesis = []
+    alpha_m = []
+    
+#    prediction = [1] * len(img_features_train)
+    prediction = np.zeros(len(img_features_train),dtype=np.int32)
+#    print("prediction type", type(prediction))
+    
     
     for i in range(0, maxIteration):
+        print("Iteration",i)
+#        print(weights)
+
         clf_tree.fit(img_features_train, img_label_train, sample_weight=weights)
-        hypothesis = clf_tree.predict(img_features_train)
-         # Indicator function
-        miss = [int(x) for x in (hypothesis != img_label_train)]
-#        print(miss)
-        # Equivalent with 1/-1 to update weights
+        hypothesis.append (clf_tree.predict(img_features_train) )
+
+            
+        miss = [int(x) for x in ( hypothesis[i] != img_label_train )]
         miss2 = [x if x==1 else -1 for x in miss]
-        err_m = np.dot(weights,miss) / sum(weights)
-        alpha_m = 0.5 * np.log( (1 - err_m) / float(err_m))
-        weights = np.multiply(weights, np.exp([float(x) * alpha_m for x in miss2]))
-         # Add to prediction
-        pred_train = [sum(x) for x in zip(pred_train, 
-                                          [x * alpha_m for x in hypothesis])]
-        print((pred_train[13],img_label_train[13]))
-        pred_train = np.sign(pred_train)
-#        print(sum(pred_train == 1))
+
+#        err_m = np.dot(weights,miss) / sum(weights)
+        err_m = np.dot(weights,miss)
+        if(err_m > 0.5):
+            break
+#        print("hypothesis[0] type", type(hypothesis[0]))
+        alpha_m.append( 0.5 * np.log( (1 - err_m) / float(err_m)) )
+#        print('alpha_m:',alpha_m)
         
-#        print(get_accuracy(pred_train,img_label_train))
+        weights = np.multiply(weights, np.exp([float(x) * alpha_m[i] for x in miss2]))
+#        print(weights.shape)
+        weights_sum = weights.sum()
+        weights = weights / weights_sum
+        
+        prediction = prediction + alpha_m[i] * hypothesis[i]
+#        
+        print(get_accuracy(np.sign(prediction),img_label_train))
+
+
+        
+#        print(weights)
+         # Add to prediction
+#        pred_train = [sum(x) for x in zip(pred_train, 
+#                                          [x * alpha_m for x in hypothesis])]
+#        print((pred_train[13],img_label_train[13]))
+#        prediction = np.sign(prediction)
+#        print(sum(pred_train == 1))
+#        print(get_accuracy(prediction,img_label_train))
+
+
     
 
 
