@@ -2,19 +2,16 @@ import matplotlib.pyplot as plt #plt 用于显示图片
 import matplotlib.image as mpimg #mpimg 用于读取图片
 import numpy as np
 from scipy import misc  #对图像进行缩放
-
 from feature import NPDFeature
-
 from sklearn.tree import DecisionTreeClassifier
-
 import pickle
 
 
-#img_face = []
-#img_nonface = []
+import matplotlib.pyplot as plt
+#%matplotlib inline
 
 sampleSize = 400
-maxIteration = 10
+maxIteration = 20
 
 img =[]
 img_label = []
@@ -76,60 +73,57 @@ if __name__ == "__main__":
     img_features_validation = img_features[int(sampleSize*0.7):]
     
     weights = np.ones(len(img_features_train)) / len(img_features_train)
-#    print(weights.shape)
-#    print(weights)
+
     clf_tree = DecisionTreeClassifier(max_depth = 1, random_state = 1)
 
-#    print(get_accuracy(clf_tree.predict(img_features_train),img_label_train))
-
-    
-#    prediction = np.zeros(len(img_features_train))
-    hypothesis = []
+    hypothesis_train, hypothesis_validation = [], []
     alpha_m = []
+
+    prediction_train = np.zeros(len(img_features_train),dtype=np.int32)
+    prediction_validation = np.zeros(len(img_features_validation),dtype=np.int32)
     
-#    prediction = [1] * len(img_features_train)
-    prediction = np.zeros(len(img_features_train),dtype=np.int32)
-#    print("prediction type", type(prediction))
-    
+    accuracy_train,accuracy_validation = [] ,[]
     
     for i in range(0, maxIteration):
-        print("Iteration",i)
-#        print(weights)
+        print("NUmber of decision trees:",i+1)
 
         clf_tree.fit(img_features_train, img_label_train, sample_weight=weights)
-        hypothesis.append (clf_tree.predict(img_features_train) )
-
+        hypothesis_train.append (clf_tree.predict(img_features_train) )
+        hypothesis_validation.append(clf_tree.predict(img_features_validation))
             
-        miss = [int(x) for x in ( hypothesis[i] != img_label_train )]
+        miss = [int(x) for x in ( hypothesis_train[i] != img_label_train )]
         miss2 = [x if x==1 else -1 for x in miss]
+        
+        distance = abs(prediction_train - img_label_train) + 1
+#        print(distance)
+        miss3 = miss * distance * miss2 
+#        print(miss3)
 
-#        err_m = np.dot(weights,miss) / sum(weights)
         err_m = np.dot(weights,miss)
         if(err_m > 0.5):
             break
-#        print("hypothesis[0] type", type(hypothesis[0]))
         alpha_m.append( 0.5 * np.log( (1 - err_m) / float(err_m)) )
-#        print('alpha_m:',alpha_m)
-        
         weights = np.multiply(weights, np.exp([float(x) * alpha_m[i] for x in miss2]))
-#        print(weights.shape)
         weights_sum = weights.sum()
         weights = weights / weights_sum
         
-        prediction = prediction + alpha_m[i] * hypothesis[i]
-#        
-        print(get_accuracy(np.sign(prediction),img_label_train))
-
+        prediction_train = prediction_train + alpha_m[i] * hypothesis_train[i]
+        prediction_validation = prediction_validation + alpha_m[i] * hypothesis_validation[i]
+        
+        accuracy_train.append( get_accuracy(np.sign(prediction_train),img_label_train) )
+        accuracy_validation.append( get_accuracy(np.sign(prediction_validation),img_label_validation) )
+        print("Train Accuracy:", accuracy_train[-1])
+        print("Validation Accuracy:", accuracy_validation[-1])
+#        if(accuracy_train[-1] == 1):
+#            break
+        
+    plt.xlabel("Number of Decision Trees")
+    plt.ylabel("Accuracy")
+    plt.plot(accuracy_train, label ="train")
+    plt.plot(accuracy_validation, label="validation")
+    plt.legend(loc="lower right")
 
         
-#        print(weights)
-         # Add to prediction
-#        pred_train = [sum(x) for x in zip(pred_train, 
-#                                          [x * alpha_m for x in hypothesis])]
-#        print((pred_train[13],img_label_train[13]))
-#        prediction = np.sign(prediction)
-#        print(sum(pred_train == 1))
-#        print(get_accuracy(prediction,img_label_train))
 
 
     
