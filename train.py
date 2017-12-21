@@ -124,8 +124,10 @@ if __name__ == "__main__":
     plt.plot(accuracy_validation, label="validation")
     plt.legend(loc="lower right")
 
-    with open('report.txt', "wb") as f:
-        print(classification_report(np.sign(prediction_validation),img_label_validation), file = f)
+    f = open("./report.txt", 'w+')  
+    print(classification_report(img_label_train,np.sign(prediction)),file=f)
+    f.close()
+        
         
 
 
