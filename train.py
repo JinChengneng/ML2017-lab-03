@@ -6,6 +6,7 @@ from feature import NPDFeature
 from sklearn.tree import DecisionTreeClassifier
 import pickle
 
+from sklearn.metrics import classification_report
 
 import matplotlib.pyplot as plt
 #%matplotlib inline
@@ -114,8 +115,8 @@ if __name__ == "__main__":
         accuracy_validation.append( get_accuracy(np.sign(prediction_validation),img_label_validation) )
         print("Train Accuracy:", accuracy_train[-1])
         print("Validation Accuracy:", accuracy_validation[-1])
-#        if(accuracy_train[-1] == 1):
-#            break
+        if(accuracy_train[-1] == 1):
+            break
         
     plt.xlabel("Number of Decision Trees")
     plt.ylabel("Accuracy")
@@ -123,6 +124,8 @@ if __name__ == "__main__":
     plt.plot(accuracy_validation, label="validation")
     plt.legend(loc="lower right")
 
+    with open('report.txt', "wb") as f:
+        print(classification_report(np.sign(prediction_validation),img_label_validation), file = f)
         
 
 
